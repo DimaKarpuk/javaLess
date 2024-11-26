@@ -1,106 +1,91 @@
-pipeline {
-    agent any
+task_branch = "${TEST_BRANCH_NAME}"
+def branch_cutted = task_branch.contains("origin") ? task_branch.split('/')[1] : task_branch.trim()
+currentBuild.displayName = "$branch_cutted"
+base_git_url = "https://gitlab.com/epickonfetka/cicd-threadqa.git"
 
-    environment {
-        DOCKER_IMAGE = "my-java-gradle-app"
-        DOCKER_TAG = "latest"
-        BASE_GIT_URL = "https://github.com/DimaKarpuk/javaLess.git"
+
+node {
+    withEnv(["branch=${branch_cutted}", "base_url=${base_git_url}"]) {
+        stage("Checkout Branch") {
+            if (!"$branch_cutted".contains("master")) {
+                try {
+                    getProject("$base_git_url", "$branch_cutted")
+                } catch (err) {
+                    echo "Failed get branch $branch_cutted"
+                    throw ("${err}")
+                }
+            } else {
+                echo "Current branch is master"
+            }
+        }
+
+        try {
+            parallel getTestStages(["apiTests", "uiTests"])
+        } finally {
+            stage ("Allure") {
+                generateAllure()
+            }
+        }
+
+//        try {
+//            stage("Run tests") {
+//                parallel(
+//                        'Api Tests': {
+//                            runTestWithTag("apiTests")
+//                        },
+//                        'Ui Tests': {
+//                            runTestWithTag("uiTests")
+//                        }
+//                )
+//            }
+//        } finally {
+//            stage("Allure") {
+//                generateAllure()
+//            }
+//        }
     }
+}
 
-    stages {
-        stage('Initialize') {
-            steps {
-                script {
-                    task_branch = "${TEST_BRANCH_NAME}"
-                    branch_cutted = task_branch.contains("origin") ? task_branch.split('/')[1] : task_branch.trim()
-                    currentBuild.displayName = "$branch_cutted"
-                }
-            }
-        }
 
-        stage('Checkout Branch') {
-            steps {
-                script {
-                    if (!"$branch_cutted".contains("master")) {
-                        try {
-                            getProject(BASE_GIT_URL, branch_cutted)
-                        } catch (err) {
-                            echo "Failed to get branch $branch_cutted"
-                            throw ("${err}")
-                        }
-                    } else {
-                        echo "Current branch is master"
-                    }
-                }
-            }
-        }
-
-        stage('Run Tests') {
-            parallel {
-                stage('API Tests') {
-                    steps {
-                        script {
-                            runTestWithTag('apiTests')
-                        }
-                    }
-                }
-                stage('UI Tests') {
-                    steps {
-                        script {
-                            runTestWithTag('uiTests')
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Generate Allure Report') {
-            steps {
-                script {
-                    generateAllure()
-                }
-            }
+def getTestStages(testTags) {
+    def stages = [:]
+    testTags.each { tag ->
+        stages["${tag}"] = {
+            runTestWithTag(tag)
         }
     }
+    return stages
+}
 
-    post {
-        always {
-            echo 'Pipeline completed'
-        }
+
+def runTestWithTag(String tag) {
+    try {
+        labelledShell(label: "Run ${tag}", script: "chmod +x gradlew \n./gradlew -x test ${tag}")
+    } finally {
+        echo "some failed tests"
     }
 }
 
 def getProject(String repo, String branch) {
     cleanWs()
     checkout scm: [
-            $class: 'GitSCM',
-            branches: [[name: branch]],
-            userRemoteConfigs: [[url: repo]]
+            $class           : 'GitSCM', branches: [[name: branch]],
+            userRemoteConfigs: [[
+                                        url: repo
+                                ]]
     ]
 }
 
-def runTestWithTag(String tag) {
-    try {
-        labelledShell(label: "Run ${tag}", script: """
-            cd ${env.WORKSPACE}/javaLess
-            chmod +x gradlew
-            ./gradlew -x test ${tag}
-        """)
-    } finally {
-        echo "some failed tests"
-    }
-}
-
 def generateAllure() {
-    sh 'cd ${WORKSPACE}/javaLess && allure generate build/allure-results -o build/allure-report'
     allure([
             includeProperties: true,
-            jdk: '',
-            properties: [],
+            jdk              : '',
+            properties       : [],
             reportBuildPolicy: 'ALWAYS',
-            results: [[path: 'build/allure-report']]
+            results          : [[path: 'build/allure-results']]
     ])
 }
+
 
 
 
