@@ -1,93 +1,37 @@
-task_branch = "${TEST_BRANCH_NAME}"
-def branch_cutted = task_branch.contains("origin") ? task_branch.split('/')[1] : task_branch.trim()
-currentBuild.displayName = "$branch_cutted"
-base_git_url = "https://gitlab.com/epickonfetka/cicd-threadqa.git"
-
-
-node {
-    withEnv(["branch=${branch_cutted}", "base_url=${base_git_url}"]) {
-        stage("Checkout Branch") {
-            if (!"$branch_cutted".contains("master")) {
-                try {
-                    getProject("$base_git_url", "$branch_cutted")
-                } catch (err) {
-                    echo "Failed get branch $branch_cutted"
-                    throw ("${err}")
+pipeline {
+    agent any
+    stages {
+        stage('Clone git repo') {
+            steps {
+                git url: 'https://github.com/DimaKarpuk/javaLess.git', branch: 'master', changelog: true
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    dockerImage = docker.build("my-docker-image")
                 }
-            } else {
-                echo "Current branch is master"
             }
         }
-
-        try {
-            parallel getTestStages(["test"])
-        } finally {
-            stage ("Allure") {
-                generateAllure()
+        stage('Run Docker Container') {
+            steps {
+                script {
+                    dockerImage.inside {
+                        bat 'gradle clean test'
+                        bat 'gradle allureReport'
+                    }
+                }
             }
         }
-
-//        try {
-//            stage("Run tests") {
-//                parallel(
-//                        'Api Tests': {
-//                            runTestWithTag("apiTests")
-//                        },
-//                        'Ui Tests': {
-//                            runTestWithTag("uiTests")
-//                        }
-//                )
-//            }
-//        } finally {
-//            stage("Allure") {
-//                generateAllure()
-//            }
-//        }
-    }
-}
-
-
-def getTestStages(testTags) {
-    def stages = [:]
-    testTags.each { tag ->
-        stages["${tag}"] = {
-            runTestWithTag(tag)
+        stage('Allure report') {
+            steps{
+                bat 'allure generate /oz.by/build/allure-results --clean -o /simpleTest/build/allure-report'
+            }
         }
     }
-    return stages
-}
-
-
-def runTestWithTag(String tag) {
-    try {
-        labelledShell(label: "Run ${tag}", script: "chmod +x gradlew \n./gradlew -x test ${tag}")
-    } finally {
-        echo "some failed tests"
+    post {
+        always {
+            allure includeProperties: false, jdk: '', results: [[path: 'build/allure-results']]
+        }
     }
 }
-
-def getProject(String repo, String branch) {
-    cleanWs()
-    checkout scm: [
-            $class           : 'GitSCM', branches: [[name: branch]],
-            userRemoteConfigs: [[
-                                        url: repo
-                                ]]
-    ]
-}
-
-def generateAllure() {
-    allure([
-            includeProperties: true,
-            jdk              : '',
-            properties       : [],
-            reportBuildPolicy: 'ALWAYS',
-            results          : [[path: 'build/allure-results']]
-    ])
-}
-
-
-
-
-
-
