@@ -20,7 +20,7 @@ node {
         }
 
         try {
-            parallel getTestStages(["test"])
+            parallel getTestStages()
         } finally {
             stage ("Allure") {
                 generateAllure()
@@ -30,18 +30,7 @@ node {
 }
 
 
-def getTestStages(testTags) {
-    def stages = [:]
-    testTags.each { tag ->
-        stages["${tag}"] = {
-            runTestWithTag(tag)
-        }
-    }
-    return stages
-}
-
-
-def runTestWithTag(String tag) {
+def runTestWithTag() {
     try {
         labelledShell(label: "Run", script: "chmod +x gradlew \n./gradlew -x test")
     } finally {
