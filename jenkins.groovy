@@ -78,7 +78,7 @@ def getProject(String repo, String branch) {
 
 def generateAllure() {
     allure([
-            includeProperties: false,
+            includeProperties: true,
             jdk              : '',
             properties       : [],
             reportBuildPolicy: 'ALWAYS',
