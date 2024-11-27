@@ -1,10 +1,6 @@
 node {
     withEnv([]) {
 
-        stage("Build") {
-            sh './gradlew build'
-        }
-
         stage("Test") {
             runTestWithTag()
         }
