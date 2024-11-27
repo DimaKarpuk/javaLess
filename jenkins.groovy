@@ -54,7 +54,7 @@ def generateAllure() {
             jdk              : '',
             properties       : [],
             reportBuildPolicy: 'ALWAYS',
-            results          : [[path: '/job/simple/lastSuccessfulBuild/artifact/allure-report.zip/*view*/']]
+            results          : [[path: 'report']]
     ])
 }
 
