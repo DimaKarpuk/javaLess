@@ -82,7 +82,7 @@ def generateAllure() {
             jdk              : '',
             properties       : [],
             reportBuildPolicy: 'ALWAYS',
-            results          : [[path: 'Pipli/allure-results']]
+            results          : [[path: 'allure-results']]
     ])
 }
 
