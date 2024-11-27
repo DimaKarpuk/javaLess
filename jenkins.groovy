@@ -18,12 +18,8 @@ node {
                 echo "Current branch is master"
             }
         }
-
-        try {
-        } finally {
             stage ("Allure") {
                 generateAllure()
-            }
         }
     }
 }
