@@ -42,7 +42,6 @@ def getProject(String repo, String branch) {
                                 ]]
     ]
 }
-
 def generateAllure() {
     allure([
             includeProperties: true,
