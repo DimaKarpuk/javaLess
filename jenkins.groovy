@@ -18,6 +18,14 @@ node {
                 echo "Current branch is master"
             }
         }
+
+        try {
+            parallel getTestStages(["test"])
+        } finally {
+            stage ("Allure") {
+                generateAllure()
+            }
+        }
     }
 }
 
@@ -35,7 +43,7 @@ def getTestStages(testTags) {
 
 def runTestWithTag(String tag) {
     try {
-        labelledShell(label: "Run ${tag}", script: "chmod +x gradlew \n./gradlew -x test")
+        labelledShell(label: "Run", script: "chmod +x gradlew \n./gradlew -x test")
     } finally {
         echo "some failed tests"
     }
