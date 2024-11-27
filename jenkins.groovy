@@ -43,7 +43,7 @@ def getTestStages(testTags) {
 
 def runTestWithTag(String tag) {
     try {
-        labelledShell(label: "Run", script: "chmod +x gradlew \n./gradlew -x test")
+        labelledShell(label: "Run", script: "chmod +x gradlew \n./gradlew -x test allureReport")
     } finally {
         echo "some failed tests"
     }
@@ -58,13 +58,15 @@ def getProject(String repo, String branch) {
                                 ]]
     ]
 }
-post {
-    always {
-        allure includeProperties:
-                false,
-                jdk: '',
-                results: [[path: 'build/allure-results']]
-    }
+
+def generateAllure() {
+    allure([
+            includeProperties: true,
+            jdk              : '',
+            properties       : [],
+            reportBuildPolicy: 'ALWAYS',
+            results          : [[path: 'build/allure-results']]
+    ])
 }
 
 
