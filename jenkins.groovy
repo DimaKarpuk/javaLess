@@ -27,7 +27,7 @@ node {
 
 def runTestWithTag() {
     try {
-        labelledShell(label: "Run", script: "chmod +x gradlew \n./gradlew -x test")
+        labelledShell(label: "Run", script: "chmod +x gradlew \n./gradlew -x test allureReport")
     } finally {
         echo "some failed tests"
     }
@@ -49,7 +49,7 @@ def generateAllure() {
             jdk              : '',
             properties       : [],
             reportBuildPolicy: 'ALWAYS',
-            results          : [[path: 'build/allure-results']]
+            results          : [[path: 'build/allure-report']]
     ])
 }
 
