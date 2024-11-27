@@ -68,6 +68,14 @@ def generateAllure() {
             results          : [[path: 'build/allure-results']]
     ])
 }
+post {
+    always {
+        allure includeProperties:
+                false,
+                jdk: '',
+                results: [[path: 'build/allure-results']]
+    }
+}
 
 
 
