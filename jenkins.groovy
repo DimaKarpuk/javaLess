@@ -70,7 +70,7 @@ def generateAllure() {
             jdk              : '',
             properties       : [],
             reportBuildPolicy: 'ALWAYS',
-            results          : [[path: 'build/allure-results']]
+            results          : [[path: "${env.ALLURE_RESULTS_DIR}"]]
     ])
 }
 
@@ -79,3 +79,4 @@ def generateAllure() {
 
 
 
+//results: [[path: "${env.ALLURE_RESULTS_DIR}"]]
