@@ -65,7 +65,7 @@ def generateAllure() {
             jdk              : '',
             properties       : [],
             reportBuildPolicy: 'ALWAYS',
-            results          : [[path: 'var/jenkins_home/workspace/simple/build/allure-report']]
+            results          : [[path: '/job/simple/lastSuccessfulBuild/artifact/allure-report.zip/*view*/']]
     ])
 }
 
