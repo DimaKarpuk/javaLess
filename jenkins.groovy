@@ -43,7 +43,7 @@ def getTestStages(testTags) {
 
 def runTestWithTag(String tag) {
     try {
-        labelledShell(label: "Run ${tag}", script: "chmod +x gradlew \n./gradlew -x test ${tag} \\n./gradlew -x allureReport ")
+        labelledShell(label: "Run ${tag}", script: "chmod +x gradlew \n./gradlew -x test ${tag} \\n./gradlew -x allureReport")
     } finally {
         echo "some failed tests"
     }
