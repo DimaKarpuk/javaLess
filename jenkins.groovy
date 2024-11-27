@@ -1,42 +1,26 @@
-pipeline {
-    agent any
-    environment {
-        ALLURE_RESULTS_DIR = 'build/allure-results'
-    }
+task_branch = "${TEST_BRANCH_NAME}"
+def branch_cutted = task_branch.contains("origin") ? task_branch.split('/')[1] : task_branch.trim()
+currentBuild.displayName = "$branch_cutted"
+base_git_url = "https://github.com/DimaKarpuk/javaLess.git"
 
-    stages {
-        stage('Checkout Branch') {
-            steps {
-                script {
-                    if (!"${branch_cutted}".contains("master")) {
-                        try {
-                            getProject("${base_git_url}", "${branch_cutted}")
-                        } catch (err) {
-                            echo "Failed get branch ${branch_cutted}"
-                            throw ("${err}")
-                        }
-                    } else {
-                        echo "Current branch is master"
-                    }
-                }
-            }
-        }
 
-        stage('Test') {
-            steps {
-                script {
-                    try {
-                        parallel getTestStages(["test"])
-                    } finally {
-                        stage("Allure") {
-                            generateAllure()
-                        }
-                    }
+node {
+    withEnv(["branch=${branch_cutted}", "base_url=${base_git_url}"]) {
+        stage("Checkout Branch") {
+            if (!"$branch_cutted".contains("master")) {
+                try {
+                    getProject("$base_git_url", "$branch_cutted")
+                } catch (err) {
+                    echo "Failed get branch $branch_cutted"
+                    throw ("${err}")
                 }
+            } else {
+                echo "Current branch is master"
             }
         }
     }
 }
+
 
 def getTestStages(testTags) {
     def stages = [:]
@@ -48,13 +32,15 @@ def getTestStages(testTags) {
     return stages
 }
 
+
 def runTestWithTag(String tag) {
     try {
         labelledShell(label: "Run ${tag}", script: """
-            chmod +x gradlew
-            ./gradlew -x test ${tag}
-            ./gradlew allureReport
-        """)
+    chmod +x gradlew
+    ./gradlew -x test ${tag}
+    ./gradlew allureReport
+""")
+
     } finally {
         echo "some failed tests"
     }
@@ -63,21 +49,20 @@ def runTestWithTag(String tag) {
 def getProject(String repo, String branch) {
     cleanWs()
     checkout scm: [
-            $class           : 'GitSCM',
-            branches         : [[name: branch]],
-            userRemoteConfigs: [[url: repo]]
+            $class           : 'GitSCM', branches: [[name: branch]],
+            userRemoteConfigs: [[
+                                        url: repo
+                                ]]
     ]
 }
 
-def generateAllure() {
-    allure([
-            includeProperties: true,
-            jdk              : '',
-            properties       : [],
-            reportBuildPolicy: 'ALWAYS',
-            results          : [[path: "${env.ALLURE_RESULTS_DIR}"]]
-    ])
+post {
+    always {
+        allure includeProperties:
+                false,
+                jdk: '',
+                results: [[path: 'build/allure-results']]
+    }
 }
-
 
 
