@@ -58,16 +58,6 @@ def getProject(String repo, String branch) {
                                 ]]
     ]
 }
-
-def generateAllure() {
-    allure([
-            includeProperties: true,
-            jdk              : '',
-            properties       : [],
-            reportBuildPolicy: 'ALWAYS',
-            results          : [[path: 'build/allure-results']]
-    ])
-}
 post {
     always {
         allure includeProperties:
