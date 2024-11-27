@@ -1,73 +1,76 @@
-task_branch = "${TEST_BRANCH_NAME}"
-def branch_cutted = task_branch.contains("origin") ? task_branch.split('/')[1] : task_branch.trim()
-currentBuild.displayName = "$branch_cutted"
-base_git_url = "https://github.com/DimaKarpuk/javaLess.git"
+pipeline {
+    agent any
 
+    environment {
+        BASE_GIT_URL = 'https://github.com/DimaKarpuk/javaLess.git'
+        BRANCH = 'main' // Замените на нужную ветку
+    }
 
-node {
-    withEnv(["branch=${branch_cutted}", "base_url=${base_git_url}"]) {
-        stage("Checkout Branch") {
-            if (!"$branch_cutted".contains("master")) {
-                try {
-                    getProject("$base_git_url", "$branch_cutted")
-                } catch (err) {
-                    echo "Failed get branch $branch_cutted"
-                    throw ("${err}")
+    stages {
+        stage('Checkout') {
+            steps {
+                script {
+                    // Проверка и загрузка кода из репозитория
+                    checkout([
+                            $class: 'GitSCM',
+                            branches: [[name: BRANCH]],
+                            userRemoteConfigs: [[url: BASE_GIT_URL]]
+                    ])
                 }
-            } else {
-                echo "Current branch is master"
             }
         }
 
-        try {
-            parallel getTestStages(["test"])
-        } finally {
-            stage ("Allure") {
-                generateAllure()
+        stage('Build') {
+            steps {
+                script {
+                    // Сборка проекта
+                    sh './gradlew build'
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                script {
+                    // Запуск тестов
+                    sh './gradlew test'
+                }
+            }
+        }
+
+        stage('Allure Report') {
+            steps {
+                allure([
+                        includeProperties: true,
+                        jdk: '',
+                        results: [[path: 'build/allure-results']]
+                ])
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                // Очистка рабочей директории
+                sh './gradlew clean'
+            }
+        }
+
+        success {
+            script {
+                echo 'Build and tests succeeded!'
+            }
+        }
+
+        failure {
+            script {
+                echo 'Build or tests failed!'
             }
         }
     }
 }
 
-
-def getTestStages(testTags) {
-    def stages = [:]
-    testTags.each { tag ->
-        stages["${tag}"] = {
-            runTestWithTag(tag)
-        }
-    }
-    return stages
-}
-
-
-def runTestWithTag(String tag) {
-    try {
-        labelledShell(label: "Run", script: "chmod +x gradlew \n./gradlew -x test allureReport")
-    } finally {
-        echo "some failed tests"
-    }
-}
-
-def getProject(String repo, String branch) {
-    cleanWs()
-    checkout scm: [
-            $class           : 'GitSCM', branches: [[name: branch]],
-            userRemoteConfigs: [[
-                                        url: repo
-                                ]]
-    ]
-}
-
-def generateAllure() {
-    allure([
-            includeProperties: true,
-            jdk              : '',
-            properties       : [],
-            reportBuildPolicy: 'ALWAYS',
-            results          : [[path: '/allure-result']]
-    ])
-}
 
 
 
