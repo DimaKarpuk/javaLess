@@ -49,7 +49,7 @@ def generateAllure() {
             jdk              : '',
             properties       : [],
             reportBuildPolicy: 'ALWAYS',
-            results          : [[path: 'build/allure-report']]
+            results          : [[path: 'tmp/hsperfdata_jenkins']]
     ])
 }
 
