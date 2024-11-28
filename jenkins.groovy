@@ -49,7 +49,7 @@ def generateAllure() {
             jdk              : '',
             properties       : [],
             reportBuildPolicy: 'ALWAYS',
-            results          : [[path: 'build/allure-results']]
+            results          : [[path: 'workspace/simpl/allure-report']]
     ])
 }
 
